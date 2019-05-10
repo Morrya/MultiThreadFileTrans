@@ -1,0 +1,5 @@
+# auto output of IDEA
+*.xml
+
+# java output
+*.class
