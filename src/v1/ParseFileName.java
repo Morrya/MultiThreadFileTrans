@@ -1,3 +1,5 @@
+package v1;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -6,7 +8,7 @@ public class ParseFileName {
     public int blockIndex;
     public int blockNum;
 
-    public ParseFileName(String fileName){
+    public ParseFileName(String fileName) {
         //对文件名进行解密处理得到文件名和分片数
         String regex = "(.+\\.[a-z]+\\.[0-9]+)";// 匹配分片文件名的正则表达式规则
         Matcher matcher = Pattern.compile(regex).matcher(fileName);
@@ -17,12 +19,14 @@ public class ParseFileName {
             this.blockNum = Integer.parseInt(arrOfStr[3]);
         }
     }
+
     public boolean isChunked() {
-        if (blockNum>1)
+        if (blockNum > 1)
             return true;
         else
             return false;
     }
+
     public boolean isEnd() {
         if (blockIndex == blockNum)
             return true;

@@ -1,5 +1,8 @@
-import java.net.*;
+package v1;
+
 import java.io.*;
+import java.net.ServerSocket;
+import java.net.Socket;
 
 public class Server {
     private int listenPort;// Socket服务器的端口
@@ -22,12 +25,6 @@ public class Server {
         }
     }
 
-
-    // 开始侦听
-    public void start() {
-        new ListenThread().start();
-    }
-
     // 将字节转成 int。b 长度不得小于 4，且只会取前 4 位。
     public static int b2i(byte[] b) {
         int value = 0;
@@ -36,6 +33,11 @@ public class Server {
             value += (b[i] & 0x000000FF) << shift;
         }
         return value;
+    }
+
+    // 开始侦听
+    public void start() {
+        new ListenThread().start();
     }
 
     /**
@@ -101,40 +103,44 @@ public class Server {
 
             readAndSave0(is, savePath + filename, file_len);
             ParseFileName pFile = new ParseFileName(filename);
+            MergeFile mergeFileThread = null;
             if (pFile.isChunked()) {
-                if (pFile.isEnd())
-                    mergeFile(pFile.fileName, pFile.blockNum);
+                if (pFile.isEnd()) {
+                    //mergeFile(pFile.fileName, pFile.blockNum);
+                    mergeFileThread = new MergeFile(pFile.fileName, pFile.blockNum);
+                    mergeFileThread.start();
+                }
             }
             ack.writeUTF("OK");// 读完数据后给client一个ok回复
 
             System.out.println("文件保存成功（" + file_len + "字节）。");
         }
 
-        void mergeFile(String fileName, int blockNum) {
-            fileName = savePath + fileName;
-            String filePath = fileName;//fileName  .doc
-            int count = 1;
-            try {
-
-                FileOutputStream os = getFileOS(filePath);
-                while (true) {
-                    String filename = fileName + "." + count + "." + blockNum;//.doc.1
-                    File file = new File(filename);
-                    DataInputStream is = new DataInputStream(
-
-                            new FileInputStream(filename));
-                    //readAndSave0(is,filePath,(int)file.length());
-                    readAndWrite(is, os, (int) file.length());
-                    is.close();
-                    count += 1;
-                    file.delete();
-                }
-            } catch (FileNotFoundException e1) {
-                System.out.println(fileName);
-            } catch (IOException e) {
-
-            }
-        }
+//        void mergeFile(String fileName, int blockNum) {
+//            fileName = savePath + fileName;
+//            String filePath = fileName;//fileName  .doc
+//            int count = 1;
+//            try {
+//
+//                FileOutputStream os = getFileOS(filePath);
+//                while (count<=blockNum) {
+//                    String filename = fileName + "." + count + "." + blockNum;//.doc.1
+//                    File file = new File(filename);
+//                    DataInputStream is = new DataInputStream(
+//
+//                            new FileInputStream(filename));
+//                    //readAndSave0(is,filePath,(int)file.length());
+//                    readAndWrite(is, os, (int) file.length());
+//                    is.close();
+//                    count += 1;
+//                    file.delete();
+//                }
+//            } catch (FileNotFoundException e1) {
+//                System.out.println(fileName);
+//            } catch (IOException e) {
+//
+//            }
+//        }
 
         private void readAndSave0(DataInputStream is, String path, int file_len) throws IOException {
             FileOutputStream os = getFileOS(path);
@@ -146,11 +152,15 @@ public class Server {
         private void readAndWrite(InputStream is, FileOutputStream os, int size) throws IOException {
             byte[] buffer = new byte[4096];
             int count = 0;
-            while (count < size) {
-                int n = is.read(buffer);
-                // 这里没有考虑 n = -1 的情况
-                os.write(buffer, 0, n);
-                count += n;
+            try {
+                while (count < size) {
+                    int n = is.read(buffer);
+                    // 这里没有考虑 n = -1 的情况
+                    os.write(buffer, 0, n);
+                    count += n;
+                }
+            } catch (Exception e) {
+                System.out.println("exception" + size);
             }
         }
 
@@ -179,4 +189,15 @@ public class Server {
             return new FileOutputStream(file);
         }
     }
+
+//    public static void main(String[] args) throws Exception{
+//        // 设置服务器地址和服务端口
+//        Server server = new Server(
+//                8080,
+//                "D:\\study file\\Third\\operate system\\proj_school\\download\\"
+//                );
+//
+//        server.start();
+//
+//    }
 }
